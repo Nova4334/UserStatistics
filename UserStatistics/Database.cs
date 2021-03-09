@@ -44,7 +44,6 @@ namespace UserStatistics
 
         public static void SetupDB()
         {
-            #region Get db type switch case
             switch (TShockAPI.TShock.Config.StorageType.ToLower())
             {
                 case "mysql":
@@ -66,12 +65,11 @@ namespace UserStatistics
 
                 default: throw new FormatException("UserStatistics: TShock database formatted improperly! Use \"mysql\" or \"sqlite\".");
             }
-            #endregion
 
             var creator = new SqlTableCreator(Sequel, Sequel.GetSqlType() == SqlType.Sqlite ? 
                 (IQueryBuilder)new SqliteQueryCreator() : new MysqlQueryCreator());
 
-            creator.EnsureExists(new SqlTable("Statistics",
+            creator.EnsureTableStructure(new SqlTable("Statistics",
                 new SqlColumn("UserID", MySqlDbType.Int32),
                 new SqlColumn("RegisterTime", MySqlDbType.Text),
                 new SqlColumn("LastLogin", MySqlDbType.Text),
@@ -90,7 +88,7 @@ namespace UserStatistics
                     var ID = reader.Get<int>("UserID");
 
                     // Check to see if account has been deleted.
-                    if (TShock.Users.GetUserByID(ID) == null) deletedUsers.Add(ID);
+                    if (TShock.UserAccounts.GetUserAccountByID(ID) == null) deletedUsers.Add(ID);
 
                     else // The account is valid.
                     {
@@ -139,8 +137,6 @@ namespace UserStatistics
         public DateTime RegisterTime { get; set; }
         public DateTime LastLogin { get; set; }
         public TimeSpan TotalTime { get; set; }
-
-        public bool LongTimeUser { get { return TotalTime >= Utils.Config.LongtimeUserLength; } }
 
         public DBInfo(int ID)
         {

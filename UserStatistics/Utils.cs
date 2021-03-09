@@ -1,74 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using TShockAPI;
 using System.IO;
+using TShockAPI;
 
 namespace UserStatistics
 {
     static class Utils
     {
-        #region Objects
-
-        public static string ConfigPath { get { return Path.Combine(TShock.SavePath, "User Statistics Configuration.json"); } }
         public static string DatabasePath { get { return Path.Combine(TShock.SavePath, "User Statistics.sqlite"); } }
         public static string LogPath { get { return Path.Combine(TShock.SavePath, "User Statistics Log.txt"); } }
-
-        public static ConfigObject Config { get; set; }
-
-        #endregion
-
-        #region Methods
 
         /// <summary>
         /// Purges things from the database, as according to the config file.
         /// </summary>
-        public static int DatabasePurge()
-        {
-            Utils.Log("Executing database purge...");
-            try
-            {
-                int turn = 0;
-                foreach (var info in Database.Infos)
-                {
-                    var count = TShock.Users.GetUserByID(info.UserID);
-                    if (Utils.IsSafe(info, count)) continue;
-
-                    // So... it has come to this.
-                    Log("Purging user \"{0}\" (ID {1}):  Group = {2}, Registered {3}, Last Login {4}, Total Time = {5}"
-                        .SFormat(count.Name, count.ID, count.Group, info.RegisterTime.ToDisplayString(),
-                        info.LastLogin.ToDisplayString(), info.TotalTime.ToDisplayString()));
-                    TShock.Users.RemoveUser(count);
-                    Database.DelSQL(info.UserID);
-                    Database.Infos.Remove(info);
-                    turn++;
-                }
-                Log("Purge: removed {0} accounts.".SFormat(turn));
-                return turn;
-            }
-            catch (Exception ex)
-            {
-                Log("Error while purging! " + ex.ToString()); return -1;
-            }
-        }
-
-        public static bool IsSafe(DBInfo info, TShockAPI.DB.User acct = null)
-        {
-            // Copy account.
-            if (acct == null) acct = TShock.Users.GetUserByID(info.UserID);
-
-            // I love these long config value names.
-            if (Config.ProtectPurgeIfLongtimeUser &&
-                info.TotalTime > Config.PurgeAfterInactiveTime ||
-                (TShock.Groups.GetGroupByName(acct.Group)
-                .HasPermission(Config.PurgeProtectionPermission)) ||
-                (Config.EnableTimeBasedPurges && Config.PurgeAfterInactiveTime
-                < DateTime.Now - info.LastLogin) ||
-                Config.WhitelistAccounts.Contains(acct.Name)) return false;
-
-            return true;
-        }
 
         public static void Log(string info)
         {
@@ -90,10 +33,6 @@ namespace UserStatistics
             File.AppendAllText(LogPath, "--|--|--|--|--|-- Beginning of log for {0} --|--|--|--|--|--"
                 .SFormat(DateTime.Now.ToDisplayString())+Environment.NewLine+Environment.NewLine);
         }
-
-        #endregion
-
-        #region Extensions
 
         /// <summary>
         /// Returns the DateTime in SQL serialized specific form.
@@ -170,7 +109,5 @@ namespace UserStatistics
         {
             return time.ToString("dd days, hh hours and m minutes");
         }
-
-        #endregion
     }
 }
